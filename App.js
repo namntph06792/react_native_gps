@@ -1,50 +1,68 @@
 import React, { useEffect, useState } from 'react';
-import { StyleSheet, Text, View, Button } from 'react-native';
+import { StyleSheet, Text, View } from 'react-native';
 import * as Location from 'expo-location';
 import * as Permissions from 'expo-permissions';
+import MapView, { Marker }  from 'react-native-maps';
+// import { MapView } from 'expo';
 
 export default function App() {
 
-  const [long, setLong] = useState(null);
-  const [lat, setLat] = useState(null);
-  const [location, setLocation] = useState(null);
-  const [mess, setMessage] = useState(null);
+  const [mapRegion, setMapRegion] = useState({latitude: 0,longitude: 0,latitudeDelta: 0,longitudeDelta: 0});
+  const [hasLocationPermissions, setPermissions] = useState(false);
+  const [locationResult, setLocation] = useState(null);
+  const [LatLng, setLatLng] = useState(null);
+
+  // const [loc, setLoc] = useState(null);
 
   useEffect(() => {
     _getLocationAsync();
   })
 
+  onMapRegionChange = (mapRegion) => {
+    setMapRegion({ mapRegion });
+  }
+
   _getLocationAsync = async () => {
     let { status } = await Permissions.askAsync(Permissions.LOCATION);
     if (status !== 'granted') {
-      setMessage('Permission to access location was denied')
+      setLocation('Permission to access location was denied');
+    } else {
+      setPermissions(true);
     }
     let location = await Location.getCurrentPositionAsync({});
-    setLocation({ location });
-  };
+    setLocation(JSON.stringify({location}));
 
-  let text = 'Waiting..';
-  if (mess) {
-    text = {mess};
-  } else if (location) {
-    text = JSON.stringify({location});
-    parseJsonAsyncFunc(text).then(jsonData => setLong(jsonData.location.location.coords.longitude));
-  }
-
-  function parseJsonAsyncFunc(jsonString){
-    return new Promise(resolve => {
-      setTimeout(() => {
-        resolve(JSON.parse(jsonString));
-      });
+    setMapRegion({ latitude: location.coords.latitude, longitude: location.coords.longitude, latitudeDelta: 0.0922, longitudeDelta: 0.0421});
+    setLatLng({ 
+      latitude: location.coords.latitude, 
+      longitude: location.coords.longitude
     });
-  }
+  };
 
   return (
     <View style={styles.container}>
-      <Text>{mess}</Text>
-      <Button title='Get GPS' onPress={() => {
-        alert(long);
-      }} />
+      <Text style={styles.paragraph}>Pan, zoom, and tap on the map!</Text>
+      {
+        locationResult === null ? 
+        <Text>Finding your current location ...</Text> :
+        hasLocationPermissions === false ?
+        <Text>Location permissions are not granted !</Text> :
+        mapRegion === null ?
+        <Text>Map region doesnt exist !</Text> :
+        <MapView
+          liteMode
+          style={{ alignSelf: 'stretch', height: 400 }}
+          initialRegion={mapRegion}
+          onRegionChange={this.onMapRegionChange}>
+          <Marker
+            draggable
+            coordinate={Marker.LatLng}
+            title = 'My Location'
+            description = "FPT Polytechnic"
+          />
+        </MapView>
+      }
+      <Text style={styles.position}>Location: {locationResult}</Text>
     </View>
   );
 }
@@ -59,6 +77,11 @@ const styles = StyleSheet.create({
   paragraph: {
     margin: 24,
     fontSize: 18,
+    fontWeight: 'bold',
     textAlign: 'center',
+    color: '#34495e',
   },
+  position: {
+    marginTop: 12,
+  }
 });
