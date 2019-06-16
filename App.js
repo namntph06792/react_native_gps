@@ -2,24 +2,31 @@ import React, { useEffect, useState } from 'react';
 import { StyleSheet, Text, View } from 'react-native';
 import * as Location from 'expo-location';
 import * as Permissions from 'expo-permissions';
-import MapView, { Marker }  from 'react-native-maps';
-// import { MapView } from 'expo';
+import MapView from 'react-native-maps';
 
 export default function App() {
 
-  const [mapRegion, setMapRegion] = useState({latitude: 0,longitude: 0,latitudeDelta: 0,longitudeDelta: 0});
+  const [mapRegion, setMapRegion] = useState({coords: {
+    latitude: 0,
+    longitude: 0,
+    latitudeDelta: 0,
+    longitudeDelta: 0
+  }});
   const [hasLocationPermissions, setPermissions] = useState(false);
   const [locationResult, setLocation] = useState(null);
-  const [LatLng, setLatLng] = useState(null);
-
-  // const [loc, setLoc] = useState(null);
+  const [LatLng, setLatLng] = useState({
+    coordinate:{
+      latitude: 0,
+      longitude: 0
+    }
+  });
 
   useEffect(() => {
     _getLocationAsync();
   })
 
-  onMapRegionChange = (mapRegion) => {
-    setMapRegion({ mapRegion });
+  _onMapRegionChange = mapRegion => {
+    setMapRegion({mapRegion});
   }
 
   _getLocationAsync = async () => {
@@ -30,12 +37,21 @@ export default function App() {
       setPermissions(true);
     }
     let location = await Location.getCurrentPositionAsync({});
-    setLocation(JSON.stringify({location}));
+    setLocation(JSON.stringify({ location }));
+    setMapRegion({ 
+      coords: { 
+        latitude: location.coords.latitude, 
+        longitude: location.coords.longitude, 
+        latitudeDelta: 0.0922, 
+        longitudeDelta: 0.0421 
+      } 
+    });
 
-    setMapRegion({ latitude: location.coords.latitude, longitude: location.coords.longitude, latitudeDelta: 0.0922, longitudeDelta: 0.0421});
-    setLatLng({ 
-      latitude: location.coords.latitude, 
-      longitude: location.coords.longitude
+    setLatLng({
+      coordinate: {
+        latitude: location.coords.latitude,
+        longitude: location.coords.longitude
+      }
     });
   };
 
@@ -50,13 +66,18 @@ export default function App() {
         mapRegion === null ?
         <Text>Map region doesnt exist !</Text> :
         <MapView
-          liteMode
+          liteMode={true}
+          mapType='satellite'
+          showsUserLocation={true}
+          followsUserLocation={true}
+          zoomEnabled={true}
+          zoomTapEnabled={true}
           style={{ alignSelf: 'stretch', height: 400 }}
-          initialRegion={mapRegion}
-          onRegionChange={this.onMapRegionChange}>
-          <Marker
+          initialRegion={mapRegion.coords}
+          onRegionChange={this._onMapRegionChange}>
+          <MapView.Marker
             draggable
-            coordinate={Marker.LatLng}
+            coordinate={LatLng.coordinate}
             title = 'My Location'
             description = "FPT Polytechnic"
           />
