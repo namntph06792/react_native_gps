@@ -16,43 +16,51 @@ export default function App() {
   const [locationResult, setLocation] = useState(null);
   const [LatLng, setLatLng] = useState({
     coordinate:{
-      latitude: 0,
-      longitude: 0
+      latitude: 0.00,
+      longitude: 0.00
     }
   });
 
   useEffect(() => {
-    _getLocationAsync();
+    this._getLocationAsync();
   })
 
   _onMapRegionChange = mapRegion => {
-    setMapRegion({mapRegion});
+    () => setMapRegion({mapRegion});
   }
 
-  _getLocationAsync = async () => {
-    let { status } = await Permissions.askAsync(Permissions.LOCATION);
-    if (status !== 'granted') {
-      setLocation('Permission to access location was denied');
-    } else {
-      setPermissions(true);
-    }
-    let location = await Location.getCurrentPositionAsync({});
-    setLocation(JSON.stringify({ location }));
-    setMapRegion({ 
-      coords: { 
-        latitude: location.coords.latitude, 
-        longitude: location.coords.longitude, 
-        latitudeDelta: 0.0922, 
-        longitudeDelta: 0.0421 
-      } 
-    });
+  _onMapRegionChangeComplete = mapRegion => {
+    () => setMapRegion({ mapRegion });
+  };
 
-    setLatLng({
-      coordinate: {
-        latitude: location.coords.latitude,
-        longitude: location.coords.longitude
+  _getLocationAsync = async () => {
+    try{
+      let { status } = await Permissions.askAsync(Permissions.LOCATION);
+      if (status !== 'granted') {
+        setLocation('Permission to access location was denied');
+      } else {
+        setPermissions(true);
       }
-    });
+      let location = await Location.getCurrentPositionAsync({});
+      setLocation(JSON.stringify(location));
+      setMapRegion({
+        coords: {
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude,
+          latitudeDelta: 0.0922,
+          longitudeDelta: 0.0421
+        }
+      });
+
+      setLatLng({
+        coordinate: {
+          latitude: location.coords.latitude,
+          longitude: location.coords.longitude
+        }
+      });
+    }catch(e){
+      console.log(e);
+    }
   };
 
   return (
@@ -67,14 +75,19 @@ export default function App() {
         <Text>Map region doesnt exist !</Text> :
         <MapView
           liteMode={true}
-          mapType='satellite'
+          mapType='standard'
           showsUserLocation={true}
           followsUserLocation={true}
+          showsMyLocationButton={true}
           zoomEnabled={true}
           zoomTapEnabled={true}
+          cacheEnabled={true}
+          loadingEnabled={true}
           style={{ alignSelf: 'stretch', height: 400 }}
-          initialRegion={mapRegion.coords}
-          onRegionChange={this._onMapRegionChange}>
+          region={mapRegion.coords}
+          //onRegionChange={this._onMapRegionChange}
+          onRegionChangeComplete={this._onMapRegionChangeComplete}
+          >
           <MapView.Marker
             draggable
             coordinate={LatLng.coordinate}
